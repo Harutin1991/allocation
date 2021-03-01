@@ -36,13 +36,13 @@ class Allocations extends Model
     {
         return $this->belongsTo('App\School', 'school_id');
     }
-
-    public function allocationFund()
+    
+    public function fund()
     {
-        return $this->hasMany('App\AllocationFund', 'allocation_id','id');
+        return $this->hasMany('App\Fund', 'allocation_id','id');
     }
     
-     public function allocationType()
+    public function allocationType()
     {
         return $this->hasOne('App\AllocationType', 'id','allocation_type_id');
     }

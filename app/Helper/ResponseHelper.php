@@ -44,10 +44,11 @@ class ResponseHelper
                 $school = $allocation->school;
                 $category = [];
                 $subcategory = [];
-                $fund = [];
-                if($allocation->allocationFund) {
-                    foreach($allocation->allocationFund as $allocationFund) {
-                             $fund[] = $allocationFund->fund;
+                if($allocation->fund) {
+                    foreach($allocation->fund as $fund) {
+                            $allocationFundTemplate = $fund->allocationFundTemplate;
+                            $allocationFund = $allocationFundTemplate->allocationFund;
+                            echo "<pre>"; print_r($allocationFundTemplate);die;
                             $category[] =  $allocationFund->category;
                             $subcategory[] =  $allocationFund->subCategory;
                     }
@@ -65,12 +66,12 @@ class ResponseHelper
             $school = $allocation->school;
             $category = [];
                 $subcategory = [];
-                 $fund = [];
-                if($allocation->allocationFund) {
-                    foreach($allocation->allocationFund as $allocationFund) {
+                if($allocation->fund) {
+                   foreach($allocation->fund as $fund) {
+                            $allocationFundTemplate = $fund->allocationFundTemplate;
+                            $allocationFund = $allocationFundTemplate->allocationFund;
                             $category[] =  $allocationFund->category;
                             $subcategory[] =  $allocationFund->subCategory;
-                             $fund[] = $allocationFund->fund;
                     }
                 }
             

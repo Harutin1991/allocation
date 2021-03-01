@@ -12,7 +12,7 @@ class School extends Model
      * @var array
      */
     protected $fillable = [
-        'school_name', 'org_id','status_id','contact_id','district_id'
+        'name', 'status_id','contact_id','district_id'
     ];
 
     public function resolveChildRouteBinding($childType, $value, $field)

@@ -6,6 +6,7 @@ $router->get('/', function () use ($router) {
 
 $router->group(['prefix'=>'api/v1'], function() use($router){
 
+    $router->get('/get-template/{allocationType}', 'AllocationsController@getTemplate');
     $router->get('/allocations', 'AllocationsController@listOfAllocations');
     $router->get('/allocations/{allocationType}', 'AllocationsController@index');
     $router->get('/allocations-totals/{allocationType}', 'AllocationsController@getTotalsForBarSection');

@@ -34,7 +34,7 @@ class AllocationFund extends Model
 
     public function subCategory()
     {
-        return $this->hasOne('App\Category', 'id','sub_category_id');
+        return $this->hasOne('App\Category', 'id','subcategory_id');
     }
 
     public function type()

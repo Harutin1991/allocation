@@ -14,7 +14,8 @@ class Fund extends Model
      * @var array
      */
     protected $fillable = [
-        'allocation_fund_template_id', 'percentage', 'amount'
+        'allocation_fund_template_id', 'percentage', 'amount','allocation_type_id',
+        'school_id', 'allocation_id', 'school_year_id'
     ];
 
     public function resolveChildRouteBinding($childType, $value, $field)
@@ -22,8 +23,18 @@ class Fund extends Model
         // TODO: Implement resolveChildRouteBinding() method.
     }
     
-    public function allocationFundTemplate()
+    public function allocation()
     {
-        return $this->hasOne('App\AllocationFundTemplate', 'id','allocation_fund_template_id');
+        return $this->hasOne('App\Allocations', 'id','allocation_id');
+    }
+    
+     public function allocationFund()
+    {
+        return $this->hasOne('App\AllocationFund', 'allocation_fund_template_id','allocation_fund_template_id');
+    }
+    
+    public function school()
+    {
+        return $this->hasOne('App\School', 'id','school_id');
     }
 }

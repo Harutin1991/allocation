@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 use App\Allocations;
+use App\Fund;
+use App\AllocationFundTemplate;
+use App\AllocationFund;
 use App\AllocationChanges;
 use App\School;
 use App\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Helper\ResponseHelper;
+use Illuminate\Support\Arr;
 
 class AllocationsController extends Controller
 {
     private $allocationsCount = 0;
     private static $currentYearId = NULL;
+    private static $currentTemplateId = 45;
     private $limit = 10;
     private $page = 1;
     private $condition = ['param'=>null,'value'=>null];
@@ -33,6 +38,12 @@ class AllocationsController extends Controller
             self::$currentYearId = $currentYear->id;
         }
     }
+    
+    public function getTemplate($allocationType,$getJsonResp = true)
+    {
+        $templateCategories = AllocationFundTemplate::where('template_id',self::$currentTemplateId)->where('allocation_type_id',$allocationType)->get();
+        return ($getJsonResp) ? response()->json(['category'=>$templateCategories]) : $templateCategories;
+    }
 
     public function index($allocationType,Request $request)
     {
@@ -41,39 +52,41 @@ class AllocationsController extends Controller
         $skip = (!$page) ? 0 : ($page - 1) * $limit;
 
         $school = School::where('is_active', 1)->orderBy('name','ASC')->get();
-
-        $allocations = Allocations
+        
+        $templateCategories = $this->getTemplate($allocationType,false);
+        
+        $fundTemplateId = Arr::pluck($templateCategories, 'id');
+        $fundArray = Fund::whereIn('allocation_fund_template_id',$fundTemplateId)->with('allocation','school','allocationFund')
+                            ->where('allocation_type_id',$allocationType)->skip($skip)->take($limit)->get();
+        
+        $allocationData = [];
+        foreach($fundArray as $key=>$fund) {
+            $allocationData[$key] = $fund;
+            $allocationData[$key]['category'] = $fund->allocationFund->category;
+            $allocationData[$key]['subCategory'] = $fund->allocationFund->subCategory;
+            $allocationData[$key]['total'] = $fund->allocation->total_allocation;
+            $allocationData[$key]['isFinal'] = (int)$fund->allocation->is_final;
+        }
+        
+       
+        //echo "<pre>";print_r($fundArray);die;
+        
+       /* $allocations = Allocations
         ::where('allocation_type_id', $allocationType)
-        ->with('school','allocationFund','allocationType')
+        ->with('fund','allocationType')
         ->join('school', 'school.id', '=', 'allocation.school_id')
-        ->orderBy('school.name')
         ->select('allocation.*') //see PS:
         ->skip($skip)->take($limit)
-        ->get();
+        ->get(); */
         //echo "<pre>";print_r($allocations);die;
 
         //$allocations = Allocations::where('allocation_type',$allocationType)->skip($skip)->take($limit)->orderBy('id', 'DESC')->get();
-        $allocationResponse = ResponseHelper::makeAllocationData($allocations);
+       // $allocationResponse = ResponseHelper::makeAllocationData($allocations);
 
 
-        $allocationsCount = Allocations::where('allocation_type_id',$allocationType)->count();
+        $allocationsCount =Fund::whereIn('allocation_fund_template_id',$fundTemplateId)->where('allocation_type_id',$allocationType)->count();
         $pagesCount = ceil($allocationsCount / $limit);
-        return response()->json(['allocations'=>$allocationResponse,'pagesCount'=>$pagesCount]);
-    }
-
-    public function getAllocationsByStatus($allocationType , Request $request)
-    {
-
-        $filter = $request->get('filter') ? $request->get('filter') : 0;
-        $allocationStatus = Allocations::$status[$filter];
-        $limit = $request->get('limit') ? $request->get('limit') : $this->limit;
-        $page = $request->get('page') ? $request->get('page') : $this->page;
-        $skip = (!$page) ? 0 : ($page - 1) * $limit;
-        $allocations = Allocations::where('is_final',$allocationStatus)->where('allocation_type_id',$allocationType)->skip($skip)->take($limit)->get();
-        $allocationResponse = ResponseHelper::makeAllocationData($allocations);
-        $allocationsCount = Allocations::where('is_final',$allocationStatus)->count();
-        $pagesCount = ceil($allocationsCount / $limit);
-        return response()->json(['allocations'=>$allocationResponse,'pagesCount'=>$pagesCount]);
+        return response()->json(['allocations'=>$allocationData,'pagesCount'=>$pagesCount]);
     }
 
     public function filterAllocation($allocationType , Request $request)
@@ -137,7 +150,16 @@ class AllocationsController extends Controller
     public function getTotalsForBarSection($allocationType, Request $request)
     {
         $schoolYearId = $request->get('school_year') ? $request->get('school_year') : self::$currentYearId;
-        $allocation = Allocations::where('allocation_type' , $allocationType);
+        
+        $templateCategories = $this->getTemplate($allocationType,false);
+        $fundTemplateId = Arr::pluck($templateCategories, 'id');
+        $allocationFund = AllocationFund::whereIn('allocation_fund_template_id',$fundTemplateId)->get();
+        $categoryId = Arr::pluck($allocationFund, 'category_id');
+        $subCategoryId = Arr::pluck($allocationFund, 'subcategory_id');
+        
+       
+        $fundArray = Fund::whereIn('allocation_fund_template_id',$fundTemplateId);
+        
         $totalInstruction = round($allocation->sum('total_instruction'),2);
         $profDevTotal = round($allocation->sum('professional_development'),2);
         $totalAllocation = round($allocation->sum('total_allocation'),2);
@@ -161,7 +183,7 @@ class AllocationsController extends Controller
 
     public function listOfAllocations()
     {
-        $allocations = Allocations::with('school','allocationFund','allocationType')->get();
+        $allocations = Allocations::with('school','fund','allocationType')->get();
         $allocationResponse = ResponseHelper::makeAllocationData($allocations);
 
         //echo "<pre>"; print_r($allocationResponse); echo "<hr>";
